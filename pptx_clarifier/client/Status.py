@@ -1,6 +1,5 @@
 import datetime
 
-
 class Status:
     """Used to store the status of a request to the server."""
 
@@ -14,9 +13,11 @@ class Status:
         Returns:
             A Status object.
         """
+        # Parse the JSON response and extract relevant information
         response = response.json()
         self.status = response['status']
         self.filename = response['filename']
+        # Convert timestamp from seconds to a datetime object
         self.timestamp = datetime.datetime.fromtimestamp(response['timestamp'])
         self.explanation = response['explanation']
 
@@ -45,4 +46,3 @@ class Status:
                f"Filename: {self.filename}\n" \
                f"Timestamp: {self.timestamp}\n" \
                f"Explanation: {self.explanation}"
-

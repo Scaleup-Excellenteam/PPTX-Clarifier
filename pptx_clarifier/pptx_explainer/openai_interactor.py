@@ -7,21 +7,36 @@ from dotenv import load_dotenv
 
 from pptx_clarifier.pptx_explainer import explainer_logger as logger
 
+# Load environment variables from the .env file
 load_dotenv()
+
+# Get OpenAI API key from environment variables
 apikey = os.getenv("OPENAI_API_KEY")
 
+# Print the API key for verification purposes
 print(apikey)
+
+# Set the OpenAI API key
 openai.api_key = os.getenv("OPENAI_API_KEY")
-# Set the maximum number of retries
+
+# Set the maximum number of retries for API requests
 max_retries = 3
-# Set the timeout value (in seconds)
+
+# Set the timeout value (in seconds) for API requests
 timeout = 100
 
 
 async def retry_on_exception(attempt, exception):
+    """
+    Retry logic for handling exceptions during API requests.
+
+    Parameters:
+    - attempt: The current attempt number.
+    - exception: The exception raised during the API request.
+    """
     if attempt < max_retries:
         logger.warning(
-            f"Request failed: {exception}\n trying again (attempt {attempt + 1} of {max_retries}).")
+            f"Request failed: {exception}\n Trying again (attempt {attempt + 1} of {max_retries}).")
         await asyncio.sleep(attempt * 2)
     else:
         logger.error("Maximum number of retries reached. Abort.")
@@ -29,14 +44,15 @@ async def retry_on_exception(attempt, exception):
 
 
 async def interact(prompt: str, messages=None):
-    """Interacts with the AI and returns the response
+    """
+    Interacts with the AI and returns the response.
 
-    Args:
-        prompt (str): prompt to be sent to the AI
-        messages (list, optional): list of messages to be sent to the AI. Defaults to None.
+    Parameters:
+    - prompt (str): The prompt to be sent to the AI.
+    - messages (list, optional): List of messages to be sent to the AI. Defaults to None.
 
     Returns:
-        str: response from the AI
+    - str: Response from the AI.
     """
     # Create a list to store the messages
     if messages is None:
@@ -73,23 +89,23 @@ async def interact(prompt: str, messages=None):
 
 if __name__ == '__main__':
     # Create an argument parser
-    parser = argparse.ArgumentParser(description='Script to interact with openai api.')
+    parser = argparse.ArgumentParser(description='Script to interact with OpenAI API.')
 
-    # Add an argument for the file path
+    # Add an argument for the prompt
     parser.add_argument('prompt', nargs=1, type=str, help='Prompt string to send to the AI')
 
     # Parse the command-line arguments
     args = parser.parse_args()
 
-    # Extract the file path from the arguments
-    prompt_arg = args.file_path
+    # Extract the prompt from the arguments
+    prompt_arg = args.prompt[0]
 
-    # Check if the file path argument is missing
+    # Check if the prompt argument is missing
     if not prompt_arg:
         parser.error('Please provide a prompt string.')
 
     try:
-        # Call the function to process the file
+        # Call the function to interact with the AI and print the response
         asyncio.run(interact(prompt_arg))
     except Exception as e:
         print(e)

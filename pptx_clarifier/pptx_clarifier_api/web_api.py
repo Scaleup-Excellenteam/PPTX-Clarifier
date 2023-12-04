@@ -8,14 +8,16 @@ from pptx_clarifier.pptx_clarifier_api import api_logger as logger
 from pptx_clarifier.db import engine
 from pptx_clarifier.db.models import User, Upload
 
+# Load environment variables from .env file
 load_dotenv()
 
+# Create a Flask application
 app = Flask(__name__)
-
 
 def process_file(uploaded_file, email):
     """
     Process the uploaded file and save it to the uploads folder.
+
     Args:
         uploaded_file: The original file name.
         email: The email address of the user who uploaded the file.
@@ -23,18 +25,23 @@ def process_file(uploaded_file, email):
     Returns:
         The UUID of the uploaded file.
     """
-
     user = None
     session = Session(bind=engine)
+    
+    # Check if the user exists, create if not
     if email:
         user = session.query(User).filter_by(email=email).first()
+
         if not user:
             user = User(email=email)
             session.add(user)
             session.commit()
+    
+    # Create an Upload instance and associate it with the user
     upload = Upload(filename=uploaded_file.filename, upload_time=datetime.now(), status="started")
     session.add(upload)
     session.commit()
+    
     if user:
         upload.user_id = user.id
         session.add(upload)
@@ -50,7 +57,6 @@ def process_file(uploaded_file, email):
     session.close()
     return upload.uid
 
-
 @app.post('/upload')
 def save_file():
     """
@@ -59,7 +65,6 @@ def save_file():
     Returns:
         A JSON object containing the UUID of the uploaded file.
     """
-
     uploaded_file = request.files['file']
     email = request.form.get('email')
 
@@ -67,14 +72,18 @@ def save_file():
     logger.info(f"file uploaded with uid: {file_uuid}")
     return make_response({"file_uuid": file_uuid, "message": "file uploaded successfully"}, 200)
 
-
 @app.get('/upload')
 def upload_file():
+    """
+    Serve a simple HTML form for file uploads.
+
+    Returns:
+        HTML form for file uploads.
+    """
     return "<form action=\"\" method=\"post\" enctype=\"multipart/form-data\">" \
            "<input type=\"file\" name=\"file\" />" \
            "<input type=\"submit\" value=\"Upload\" />" \
            "</form>"
-
 
 @app.get('/status')
 def get_status():
@@ -84,7 +93,6 @@ def get_status():
     Returns:
         A JSON object containing the status of the uploaded file.
     """
-
     upload = None
     session = Session(bind=engine)
 
@@ -99,6 +107,7 @@ def get_status():
 
     elif email and filename:
         user = session.query(User).filter_by(email=email).first()
+        
         if user:
             upload = session.query(Upload).filter_by(user=user, filename=filename).first()
 
@@ -106,7 +115,8 @@ def get_status():
         return make_response({"status": "not found"}, 404)
 
     explanation = upload.explanation()
-    # initialize the response body
+    
+    # Initialize the response body
     response_body = {
         "filename": upload.filename,
         "timestamp": upload.upload_time,
@@ -116,6 +126,6 @@ def get_status():
 
     return make_response(response_body, 200)
 
-
 if __name__ == "__main__":
+    # Run the Flask application
     app.run()
